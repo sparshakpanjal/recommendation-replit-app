@@ -2,25 +2,21 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
+const dotenv = require('dotenv').config();
 
 const app = express();
 app.use(express.json());
 
+// MongoDB connection
 mongoose.connect('mongodb://localhost:27017/myapp', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
 
-const port = 5000;
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
-});
-const express = require("express");
-const app = express();
+// Port configuration
+const PORT = process.env.PORT || 5000;
 
-const dotenv = require("dotenv").config();
-const PORT = process.env.PORT || 4000;
-
-app.listen(PORT, () => {
-    console.log(`Server is running at PORT ${PORT}`);
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running at PORT ${PORT}`);
 });
