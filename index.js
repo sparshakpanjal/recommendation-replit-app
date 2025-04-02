@@ -15,3 +15,12 @@ const port = 5000;
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
+const express = require("express");
+const app = express();
+
+const dotenv = require("dotenv").config();
+const PORT = process.env.PORT || 4000;
+
+app.listen(PORT, () => {
+    console.log(`Server is running at PORT ${PORT}`);
+});
