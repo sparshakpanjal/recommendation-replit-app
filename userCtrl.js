@@ -1,7 +1,7 @@
 
 const User = require("./userModel");
 
-const createUser = async (req, res) => {
+const createUser = async (req, res, next) => {
     try {
         const { email } = req.body;
         const findUser = await User.findOne({ email });
@@ -10,21 +10,20 @@ const createUser = async (req, res) => {
             // Create new User
             const newUser = await User.create(req.body);
             res.json({
-                success: true,
-                user: newUser
+                status: "success",
+                user: {
+                    _id: newUser._id,
+                    firstname: newUser.firstname,
+                    lastname: newUser.lastname,
+                    email: newUser.email,
+                    mobile: newUser.mobile
+                }
             });
         } else {
-            res.json({
-                msg: "User Already Exists",
-                success: false,
-            });
+            throw new Error("User Already Exists");
         }
     } catch (error) {
-        res.status(500).json({
-            msg: "Internal Server Error",
-            success: false,
-            error: error.message
-        });
+        next(error);
     }
 };
 
