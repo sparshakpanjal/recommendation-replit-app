@@ -13,13 +13,13 @@ dbConnect();
 // Middleware
 app.use(express.json());
 
-// Root route
-app.use("/", (req, res) => {
-    res.send("Hello from server side");
-});
-
 // Routes
 app.use("/api/user", authRouter);
+
+// Root route
+app.get("/", (req, res) => {
+    res.send("Hello from server side");
+});
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {

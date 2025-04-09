@@ -1,7 +1,31 @@
+
 const express = require("express");
 const router = express.Router();
 
-router.post("/register");
+router.post("/register", (req, res) => {
+    try {
+        res.json({
+            message: "User registration endpoint"
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+});
+
+router.post("/login", (req, res) => {
+    try {
+        res.json({
+            message: "User login endpoint"
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+});
 
 module.exports = router;
-
