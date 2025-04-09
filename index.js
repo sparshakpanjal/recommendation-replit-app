@@ -16,8 +16,9 @@ app.use(express.json());
 // Routes
 app.use("/api/user", authRouter);
 
-// Error Handler
-const errorHandler = require("./errorHandller");
+// Error Handlers
+const { errorHandler, notFound } = require("./errorHandller");
+app.use(notFound);
 app.use(errorHandler);
 
 // Root route
