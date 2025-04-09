@@ -1,5 +1,10 @@
 
 const User = require("./userModel");
+const jwt = require("jsonwebtoken");
+
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+};
 
 const createUser = async (req, res, next) => {
     try {
@@ -9,8 +14,10 @@ const createUser = async (req, res, next) => {
         if (!findUser) {
             // Create new User
             const newUser = await User.create(req.body);
+            const token = generateToken(newUser._id);
             res.json({
                 status: "success",
+                token,
                 user: {
                     _id: newUser._id,
                     firstname: newUser.firstname,
@@ -33,7 +40,12 @@ const loginUser = async (req, res, next) => {
         const findUser = await User.findOne({ email });
         
         if (findUser && (await findUser.isPasswordMatched(password))) {
-            res.json(findUser);
+            const token = generateToken(findUser._id);
+            res.json({
+                status: "success",
+                token,
+                user: findUser
+            });
         } else {
             throw new Error("Invalid Credentials");
         }
