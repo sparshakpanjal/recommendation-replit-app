@@ -4,27 +4,36 @@ const { generateToken } = require("./jwtTokens");
 
 const createUser = async (req, res, next) => {
     try {
-        const { email } = req.body;
-        const findUser = await User.findOne({ email });
+        const { email, password, firstname, lastname, mobile } = req.body;
         
-        if (!findUser) {
-            // Create new User
-            const newUser = await User.create(req.body);
-            const token = generateToken(newUser._id);
-            res.json({
-                status: "success",
-                token,
-                user: {
-                    _id: newUser._id,
-                    firstname: newUser.firstname,
-                    lastname: newUser.lastname,
-                    email: newUser.email,
-                    mobile: newUser.mobile
-                }
-            });
-        } else {
+        if (!email || !password || !firstname || !lastname || !mobile) {
+            throw new Error("All fields are required");
+        }
+
+        const findUser = await User.findOne({ email });
+        if (findUser) {
             throw new Error("User Already Exists");
         }
+
+        const newUser = await User.create({
+            email,
+            password,
+            firstname,
+            lastname,
+            mobile
+        });
+
+        res.status(201).json({
+            status: "success",
+            token: generateToken(newUser._id),
+            user: {
+                _id: newUser._id,
+                firstname: newUser.firstname,
+                lastname: newUser.lastname,
+                email: newUser.email,
+                mobile: newUser.mobile
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -33,18 +42,32 @@ const createUser = async (req, res, next) => {
 const loginUser = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const findUser = await User.findOne({ email });
         
-        if (findUser && (await findUser.isPasswordMatched(password))) {
-            const token = generateToken(findUser._id);
-            res.json({
-                status: "success",
-                token,
-                user: findUser
-            });
-        } else {
-            throw new Error("Invalid Credentials");
+        if (!email || !password) {
+            throw new Error("Email and password are required");
         }
+
+        const findUser = await User.findOne({ email });
+        if (!findUser) {
+            throw new Error("User not found");
+        }
+
+        const isPasswordValid = await findUser.isPasswordMatched(password);
+        if (!isPasswordValid) {
+            throw new Error("Invalid password");
+        }
+
+        res.json({
+            status: "success",
+            token: generateToken(findUser._id),
+            user: {
+                _id: findUser._id,
+                firstname: findUser.firstname,
+                lastname: findUser.lastname,
+                email: findUser.email,
+                mobile: findUser.mobile
+            }
+        });
     } catch (error) {
         next(error);
     }
