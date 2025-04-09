@@ -1,22 +1,27 @@
 
-const express = require('express');
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
-const dotenv = require('dotenv').config();
-
+const express = require("express");
+const dbConnect = require("./dbconnect");
 const app = express();
+require('dotenv').config();
+
+const PORT = process.env.PORT || 5000;
+const authRouter = require("./authRoute");
+
+// Connect to database
+dbConnect();
+
+// Middleware
 app.use(express.json());
 
-// MongoDB connection
-mongoose.connect('mongodb://localhost:27017/myapp', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
+// Root route
+app.use("/", (req, res) => {
+    res.send("Hello from server side");
 });
 
-// Port configuration
-const PORT = process.env.PORT || 5000;
+// Routes
+app.use("/api/user", authRouter);
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running at PORT ${PORT}`);
+    console.log(`Server is running at PORT ${PORT}`);
 });
