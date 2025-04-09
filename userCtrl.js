@@ -27,4 +27,19 @@ const createUser = async (req, res, next) => {
     }
 };
 
-module.exports = { createUser };
+const loginUser = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
+        const findUser = await User.findOne({ email });
+        
+        if (findUser && (await findUser.isPasswordMatched(password))) {
+            res.json(findUser);
+        } else {
+            throw new Error("Invalid Credentials");
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { createUser, loginUser };
