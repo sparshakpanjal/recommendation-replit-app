@@ -16,6 +16,10 @@ app.use(express.json());
 // Routes
 app.use("/api/user", authRouter);
 
+// Error Handler
+const errorHandler = require("./errorHandller");
+app.use(errorHandler);
+
 // Root route
 app.get("/", (req, res) => {
     res.send("Hello from server side");
