@@ -21,6 +21,13 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
+    password: {
+        type: String,
+        required: true,
+    },
+}, {
+    timestamps: true
+});
 
 // Encrypt password before saving
 userSchema.pre('save', async function(next) {
@@ -31,12 +38,9 @@ userSchema.pre('save', async function(next) {
     this.password = await bcrypt.hash(this.password, salt);
 });
 
-    password: {
-        type: String,
-        required: true,
-    },
-}, {
-    timestamps: true
-});
+// Method to compare passwords
+userSchema.methods.isPasswordMatched = async function(enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+};
 
 module.exports = mongoose.model("User", userSchema);
