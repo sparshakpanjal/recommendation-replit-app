@@ -73,4 +73,85 @@ const loginUser = async (req, res, next) => {
     }
 };
 
-export default { createUser, loginUser };
+// Get all users
+const getAllUsers = async (req, res, next) => {
+    try {
+        const users = await User.find();
+        res.json(users);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Get a single user
+const getUser = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findById(id);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        res.json(user);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Update user
+const updateUser = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { firstname, lastname, email, mobile } = req.body;
+        
+        // Don't allow password updates through this endpoint for security
+        const updatedUser = await User.findByIdAndUpdate(
+            id,
+            {
+                firstname,
+                lastname,
+                email,
+                mobile
+            },
+            { new: true }
+        );
+        
+        if (!updatedUser) {
+            throw new Error("User not found");
+        }
+        
+        res.json({
+            status: "success",
+            user: updatedUser
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Delete user
+const deleteUser = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const deletedUser = await User.findByIdAndDelete(id);
+        
+        if (!deletedUser) {
+            throw new Error("User not found");
+        }
+        
+        res.json({
+            status: "success",
+            message: "User deleted successfully"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export default { 
+    createUser, 
+    loginUser, 
+    getAllUsers, 
+    getUser, 
+    updateUser, 
+    deleteUser 
+};

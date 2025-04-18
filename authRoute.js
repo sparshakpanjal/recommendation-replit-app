@@ -1,6 +1,7 @@
 
 import express from "express";
-import userCtrl from './userCtrl.js'; // Changed from '../controller/userCtrl.js' to './userCtrl.js'
+import userCtrl from './userCtrl.js';
+import { authMiddleware, isAdmin } from './authMiddleware.js';
 
 const router = express.Router();
 
@@ -8,10 +9,10 @@ const router = express.Router();
 router.post("/register", userCtrl.createUser);
 router.post("/login", userCtrl.loginUser);
 
-// Protected Routes - Commented out until these functions are implemented
-// router.get("/:id", authMiddleware, isAdmin, getaUser);
-// router.delete("/:id", authMiddleware, isAdmin, deleteaUser);
-// router.put("/edit-user", authMiddleware, isAdmin, updateUser);
-// router.put("/block-user/:id", authMiddleware, isAdmin, blockUser);
+// Protected Routes
+router.get("/all", authMiddleware, isAdmin, userCtrl.getAllUsers);
+router.get("/:id", authMiddleware, userCtrl.getUser);
+router.put("/:id", authMiddleware, userCtrl.updateUser);
+router.delete("/:id", authMiddleware, isAdmin, userCtrl.deleteUser);
 
 export default router;
