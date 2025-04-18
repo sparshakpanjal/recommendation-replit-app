@@ -11,10 +11,7 @@ const dbConnect = async () => {
       return;
     }
 
-    await mongoose.connect(process.env.MONGODB_URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGODB_URL);
 
     console.log("✅ MongoDB Connected Successfully");
   } catch (err) {
