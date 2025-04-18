@@ -1,4 +1,6 @@
-import { sign, verify } from "jsonwebtoken";
+
+import jsonwebtoken from "jsonwebtoken";
+const { sign, verify } = jsonwebtoken;
 
 const generateToken = (id) => {
   if (!process.env.JWT_SECRET) {
