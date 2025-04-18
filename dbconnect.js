@@ -1,17 +1,28 @@
-
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const dbConnect = async () => {
   try {
     if (!process.env.MONGODB_URL) {
       throw new Error("MONGODB_URL environment variable is not defined");
     }
-    const conn = await mongoose.connect(process.env.MONGODB_URL);
-    console.log("Database Connected Successfully");
-  } catch (error) {
-    console.error("Database error:", error.message);
+
+    if (mongoose.connection.readyState >= 1) {
+      console.log("🔁 Reusing existing MongoDB connection");
+      return;
+    }
+
+    await mongoose.connect(process.env.MONGODB_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    console.log("✅ MongoDB Connected Successfully");
+  } catch (err) {
+    console.error("❌ MongoDB Connection Error:", err.message);
     process.exit(1);
   }
 };
 
-module.exports = dbConnect;
+export default dbConnect;
+
+

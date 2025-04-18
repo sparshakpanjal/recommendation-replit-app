@@ -1,13 +1,15 @@
+import express from "express";
+import dotenv from "dotenv";
+import dbConnect from "./dbconnect.js";
+import authRouter from "./authRoute.js";
+import { errorHandler, notFound } from "./errorHandler.js"; // Corrected typo in import
 
-const express = require("express");
-const dbConnect = require("./dbconnect");
+dotenv.config(); // Load environment variables
+
 const app = express();
-require('dotenv').config();
-
 const PORT = process.env.PORT || 5000;
-const authRouter = require("./authRoute");
 
-// Connect to database
+// Connect to MongoDB
 dbConnect();
 
 // Middleware
@@ -17,16 +19,15 @@ app.use(express.json());
 app.use("/api/user", authRouter);
 
 // Error Handlers
-const { errorHandler, notFound } = require("./errorHandller");
 app.use(notFound);
 app.use(errorHandler);
 
-// Root route
+// Root Route
 app.get("/", (req, res) => {
     res.send("Hello from server side");
 });
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running at PORT ${PORT}`);
+    console.log(`🚀 Server is running at http://localhost:${PORT}`);
 });

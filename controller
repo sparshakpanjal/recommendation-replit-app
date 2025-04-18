@@ -1,0 +1,6 @@
+// controller
+/userCtrl.js
+export const blockUser = (req, res) => {
+  // your logic here
+  res.send("User blocked!");
+};

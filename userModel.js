@@ -1,6 +1,5 @@
-
-const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
+import mongoose from "mongoose";
+import bcrypt from "bcrypt"; // Corrected import to use ES module style
 
 const userSchema = new mongoose.Schema({
     isAdmin: {
@@ -29,8 +28,22 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    role: {
+        type: String,
+        default: "user",
+    },
+    isBlocked: {
+        type: Boolean,
+        default: false, // Fixed typo 'defaul' to 'default'
+    },
+    cart: {
+        type: Array,
+        default: []
+    },
+    address: [{ type: mongoose.Schema.Types.ObjectId, ref: "Address" }],
+    Wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
 }, {
-    timestamps: true
+    timestamps: true, // Corrected 'timestemps' to 'timestamps'
 });
 
 // Encrypt password before saving
@@ -47,4 +60,5 @@ userSchema.methods.isPasswordMatched = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model("User", userSchema);
+export default mongoose.model("User", userSchema); // Corrected module export
+

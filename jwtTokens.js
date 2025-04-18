@@ -1,11 +1,10 @@
-
-const jwt = require("jsonwebtoken");
+import { sign, verify } from "jsonwebtoken";
 
 const generateToken = (id) => {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is not defined in environment variables");
   }
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  return sign({ id }, process.env.JWT_SECRET, {
     expiresIn: "3d",
   });
 };
@@ -15,10 +14,10 @@ const verifyToken = (token) => {
     throw new Error("JWT_SECRET is not defined in environment variables");
   }
   try {
-    return jwt.verify(token, process.env.JWT_SECRET);
+    return verify(token, process.env.JWT_SECRET);
   } catch (error) {
     throw new Error("Invalid token");
   }
 };
 
-module.exports = { generateToken, verifyToken };
+export default { generateToken, verifyToken };

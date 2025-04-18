@@ -1,0 +1,37 @@
+import jwt from "jsonwebtoken";
+import User from "../models/userModel.js"; // Corrected import
+import asyncHandler from "express-async-handler";
+
+// Auth Middleware
+const authMiddleware = asyncHandler(async (req, res, next) => {
+    let token;
+    if (req?.headers?.authorization?.startsWith('Bearer')) { // Fixed typo 'startswith' to 'startsWith'
+        token = req.headers.authorization.split(" ")[1]; // Fixed issue splitting token
+        try {
+            if (token) {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET); // Fixed typo 'JWT_SECERT' to 'JWT_SECRET'
+                const user = await User.findById(decoded.id); // Corrected to use decoded.id
+                req.user = user;
+                next();
+            }
+        } catch (error) {
+            throw new Error("Not Authorized or token expired, Please login again");
+        }
+    } else {
+        throw new Error("There is no token attached to header");
+    }
+});
+
+// Admin Middleware
+const isAdmin = asyncHandler(async (req, res, next) => {
+    const { email } = req.user;
+    const adminUser = await User.findOne({ email }); // Fixed typo 'flind0ne' to 'findOne'
+    if (adminUser.role !== "admin") {
+        throw new Error("You are not an admin");
+    } else {
+        next();
+    }
+});
+
+export { authMiddleware, isAdmin };
+
