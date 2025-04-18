@@ -1,5 +1,6 @@
 import User from "./userModel.js"; // Corrected import
-import { generateToken } from "./jwtTokens.js"; // Corrected import
+import jwtTokens from "./jwtTokens.js"; // Corrected import
+const { generateToken } = jwtTokens;
 
 const createUser = async (req, res, next) => {
     try {

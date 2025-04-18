@@ -1,16 +1,17 @@
+
 import jwt from "jsonwebtoken";
-import User from "./userModel.js"; // Corrected import
+import User from "../userModel.js";
 import asyncHandler from "express-async-handler";
 
 // Auth Middleware
 const authMiddleware = asyncHandler(async (req, res, next) => {
     let token;
-    if (req?.headers?.authorization?.startsWith('Bearer')) { // Fixed typo 'startswith' to 'startsWith'
-        token = req.headers.authorization.split(" ")[1]; // Fixed issue splitting token
+    if (req?.headers?.authorization?.startsWith('Bearer')) {
+        token = req.headers.authorization.split(" ")[1];
         try {
             if (token) {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET); // Fixed typo 'JWT_SECERT' to 'JWT_SECRET'
-                const user = await User.findById(decoded.id); // Corrected to use decoded.id
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                const user = await User.findById(decoded.id);
                 req.user = user;
                 next();
             }
@@ -25,7 +26,7 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
 // Admin Middleware
 const isAdmin = asyncHandler(async (req, res, next) => {
     const { email } = req.user;
-    const adminUser = await User.findOne({ email }); // Fixed typo 'flind0ne' to 'findOne'
+    const adminUser = await User.findOne({ email });
     if (adminUser.role !== "admin") {
         throw new Error("You are not an admin");
     } else {
@@ -34,4 +35,3 @@ const isAdmin = asyncHandler(async (req, res, next) => {
 });
 
 export { authMiddleware, isAdmin };
-
