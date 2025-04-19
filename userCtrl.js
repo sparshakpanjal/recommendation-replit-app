@@ -11,13 +11,7 @@ const validateMongoDbId = (id) => {
     return true;
 };
 import jwt from "jsonwebtoken";
-import { error } from "console";
 import asyncHandler from "express-async-handler";
-
-// Fix for refresh token generation
-const generateRefreshToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "3d" });
-};
 
 
 const createUser = async (req, res, next) => {
