@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import dbConnect from "./dbconnect.js";
 import authRouter from "./authRoute.js";
 import { errorHandler, notFound } from "./errorHandler.js"; // Corrected typo in import
-import cookieParser from "cookie-parser";
 
 dotenv.config(); // Load environment variables
 
@@ -15,7 +14,6 @@ dbConnect();
 
 // Middleware
 app.use(express.json());
-app.use(cookieParser());
 
 // Routes
 app.use("/api/user", authRouter);

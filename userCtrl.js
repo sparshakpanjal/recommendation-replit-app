@@ -74,8 +74,8 @@ const loginUser = async (req, res, next) => {
         if (!isPasswordValid) {
             throw new Error("Invalid password");
         }
-        const refreshToken = await
-            generateRefreshtokenToken (findUser?._id);
+        
+        const refreshToken = generateRefreshToken(findUser?._id);
         const updateuser = await
             User.findByIdAndUpdate(
                 findUser.id,
@@ -84,10 +84,11 @@ const loginUser = async (req, res, next) => {
                 },
                 { new: true}
             );
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            maxAge: 72 * 60 * 60 * 1000,
-        });
+            
+        // Set cookie manually without cookie-parser
+        const maxAge = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
+        const expires = new Date(Date.now() + maxAge);
+        res.setHeader('Set-Cookie', `refreshToken=${refreshToken}; HttpOnly; Path=/; Expires=${expires.toUTCString()}; Secure`);
 
         res.json({
             status: "success",
@@ -130,12 +131,35 @@ const getUser = async (req, res, next) => {
     }
 };
 
+// Helper function to parse cookies without cookie-parser
+const parseCookies = (req) => {
+    const cookieHeader = req.headers.cookie;
+    if (!cookieHeader) return {};
+    
+    const cookieObj = {};
+    const cookies = cookieHeader.split(';');
+    
+    cookies.forEach(cookie => {
+        const parts = cookie.split('=');
+        const key = parts[0].trim();
+        const value = parts.slice(1).join('=').trim();
+        cookieObj[key] = decodeURIComponent(value);
+    });
+    
+    return cookieObj;
+};
+
+// Function to generate refresh token
+const generateRefreshToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "3d" });
+};
+
 // Handle refresh token
 const handleRefreshToken = asyncHandler(async (req, res) => {
-    const cookie = req.cookies;
-    console.log(cookie);
-    if (!cookie?.refreshToken) throw new Error("No Refresh Token in Cookies");
-    const refreshToken = cookie.refreshToken;
+    const cookies = parseCookies(req);
+    console.log(cookies);
+    if (!cookies?.refreshToken) throw new Error("No Refresh Token in Cookies");
+    const refreshToken = cookies.refreshToken;
     console.log(refreshToken);
     const user = await User.findOne({ refreshToken });
     if (!user) throw new Error("No Refresh token present in db or not matched");
@@ -150,24 +174,20 @@ const handleRefreshToken = asyncHandler(async (req, res) => {
 
 // logout functionality
 const logout = asyncHandler(async (req, res) => {
-    const cookie = req.cookies;
-    if (!cookie?.refreshToken) throw new Error("No Refresh Token in Cookies");
-    const refreshToken = cookie.refreshToken;
+    const cookies = parseCookies(req);
+    if (!cookies?.refreshToken) throw new Error("No Refresh Token in Cookies");
+    const refreshToken = cookies.refreshToken;
     const user = await User.findOne({ refreshToken });
     if (!user) {
-        res.clearCookie("refreshToken", {
-            httpOnly: true,
-            secure: true,
-        });
+        // Set cookie with past expiry to delete it
+        res.setHeader('Set-Cookie', 'refreshToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure');
         return res.sendStatus(204); // forbidden
     }
     await User.findOneAndUpdate({ refreshToken }, {
         refreshToken: "",
     });
-    res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: true,
-    });
+    // Set cookie with past expiry to delete it
+    res.setHeader('Set-Cookie', 'refreshToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure');
     return res.sendStatus(204); // forbidden
 });
      
