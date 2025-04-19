@@ -12,9 +12,11 @@ router.post("/login", userCtrl.loginUser);
 // Protected Routes
 router.get("/all", authMiddleware, isAdmin, userCtrl.getAllUsers);
 router.get("/:id", authMiddleware, userCtrl.getUser);
-router.put("/:id", authMiddleware,isAdmin,blockUser, userCtrl.updateUser); 
-router.delete("/:id", authMiddleware, isAdmin,unblockUser, userCtrl.deleteUser);
-router.get("/refresh", handleRefreshToken);
-router.get("/logout", logout);
+router.put("/:id", authMiddleware, isAdmin, userCtrl.updateUser); 
+router.delete("/:id", authMiddleware, isAdmin, userCtrl.deleteUser);
+router.get("/refresh", userCtrl.handleRefreshToken);
+router.get("/logout", userCtrl.logout);
+router.put("/block-user/:id", authMiddleware, isAdmin, userCtrl.blockUser);
+router.put("/unblock-user/:id", authMiddleware, isAdmin, userCtrl.unblockUser);
 
 export default router;
