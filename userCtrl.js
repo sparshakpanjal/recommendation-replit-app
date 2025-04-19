@@ -1,6 +1,12 @@
 import User from "./userModel.js"; // Corrected import
 import jwtTokens from "./jwtTokens.js"; // Corrected import
+import expressAsyncHandler from "express-async-handler";
 const { generateToken } = jwtTokens;
+const validateMongoDbId = require("../utils/validateMongodbId");
+import { generateRefreshtokenToken } from "./config/refreshtoken.js";
+import jwt from "jsonwebtoken";
+import { error } from "console";
+
 
 const createUser = async (req, res, next) => {
     try {
@@ -56,6 +62,20 @@ const loginUser = async (req, res, next) => {
         if (!isPasswordValid) {
             throw new Error("Invalid password");
         }
+        const refreshToken = await
+            generateRefreshtokenToken (findUser?._id);
+        const updateuser = await
+            User.findByIdAndUpdate(
+                findUser.id,
+                {
+                    refreshToken: refreshToken,
+                },
+                { new: true}
+            );
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            maxAge: 72 * 60 * 60 * 1000,
+        });
 
         res.json({
             status: "success",
@@ -85,6 +105,9 @@ const getAllUsers = async (req, res, next) => {
 
 // Get a single user
 const getUser = async (req, res, next) => {
+   
+    const { id } = req.params;
+    validateMongoDbId(id);
     try {
         const { id } = req.params;
         const user = await User.findById(id);
@@ -96,6 +119,51 @@ const getUser = async (req, res, next) => {
         next(error);
     }
 };
+
+// Handle refresh token
+const handleRefreshToken = asyncHandler(async(req, res) => {
+    const cookie = req.cookies;
+    console.log(cookie);
+    if (!cookie?.refreshToken) throw new Error("No Refresh Token in Cookies");
+    const refreshToken = cookie.refreshToken;
+    console.log(refreshToken);
+    const user = await User.findOne({ refreshToken});
+    if (!user) throw new Error("No Refresh token present in db or not matched");
+    jwt.verify(refreshToken, process.env.JWT_SECRET,(err,decoded => {
+        if (err || user,id !== decoded.id){
+            throw new Error("There is something wrong with refresh token");
+        }
+        const accessToken = generateToken(User?._id);
+        res,json({ accessToken })
+    }));
+});
+
+
+// logout functionality
+
+const logout = asyncHandler(async(req, req) => {
+    const cookie = req.cookies;
+    if (!cookie?.refreshToken) throw new Error("No Refresh Token in Cookies");
+    const refreshToken = cookie.refreshtoken;
+    const user = await User.findOne({ refreshToken});
+    if (!user) {
+        res.clearCookie("refrshToken", {
+            httpOnly: true,
+            secure: true,
+        });
+        return res.sendStatus(204);//forbidden
+    }
+    await User.findOneAndUpdate(refreshToken, {
+        refreshToken: "",
+    
+         });
+    res.clearCookie("refrshToken", {
+            httpOnly: true,
+            secure: true,
+    });
+    return res.sendStatus(204);//forbidden
+});
+     
 
 // Update user
 const updateUser = async (req, res, next) => {
@@ -145,8 +213,50 @@ const deleteUser = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-};
+});
 
+const blockUser = asyncHandler(async(req, res) => {});
+ const { id } = req.params;
+ try {
+     const blockuser = await User.findByIdAndUpdate(
+         id,
+         {
+             isBlocked: true,
+         },
+         {
+             new: true,
+         }
+     );
+     res.json({
+         message: "User Blocked",
+     });
+ } catch (error) {
+   throw new Error(error);  
+ }
+});
+const unblockUser = expressAsyncHandler(async(req, res) => {
+    const { id } = req.params;
+    validateMongoDbId(i );
+
+
+ try {
+     const unblockuser = await User.findByIdAndUpdate(
+         id,
+         {
+             isBlocked: false,
+         },
+         {
+             new: true,
+         }
+     );
+     res.json({
+         message: "User UnBlocked",
+     });     
+ } catch (error) {
+   throw new Error(error);  
+ }
+});    
+     
 export default { 
     createUser, 
     loginUser, 
@@ -154,4 +264,8 @@ export default {
     getUser, 
     updateUser, 
     deleteUser 
+    updatedUser,
+    blockUser,
+    unblockUser,
+    handleRefreshToken,
 };

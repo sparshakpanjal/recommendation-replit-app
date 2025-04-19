@@ -8,6 +8,8 @@ dotenv.config(); // Load environment variables
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const authRouter = require("./routes/authRoute");
+const cookieParser = require("cookie-parser");
 
 // Connect to MongoDB
 dbConnect();
@@ -17,6 +19,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/user", authRouter);
+app.use
 
 // Error Handlers
 app.use(notFound);
