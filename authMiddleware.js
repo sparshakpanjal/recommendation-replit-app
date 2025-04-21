@@ -24,6 +24,7 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
 
 // Admin Middleware
 const isAdmin = asyncHandler(async (req, res, next) => {
+    console.log(req.user);
     const { email } = req.user;
     const adminUser = await User.findOne({ email }); // Fixed typo 'flind0ne' to 'findOne'
     if (adminUser.role !== "admin") {
