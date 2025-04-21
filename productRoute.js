@@ -1,10 +1,11 @@
 const express = require("express");
-const { createProduct, 
+import { createProduct, 
        getaProduct,
-       gatAllProduct,
-       filterProduct,
-      } = require("../controller/productCtrl");
-const { isAdmin } = require("../middlewares/authMiddleware");
+       getAllProduct,
+       updateProduct,
+       deleteProduct
+      } from "./controllers/productCtrl.js";
+import { authMiddleware, isAdmin } from "./authMiddleware.js";
 const router = express.Router();
 
 router.post("/", authMiddleware, isAdmin,  createProduct);
@@ -14,5 +15,5 @@ router.delete("/:id", authMiddleware, isAdmin, deleteProduct);
 router.get("/", getAllProduct);
 
 
-module.exports = router;
+export default router;
 
