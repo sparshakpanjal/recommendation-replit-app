@@ -10,7 +10,13 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB
-dbConnect();
+(async () => {
+  try {
+    await dbConnect();
+  } catch (error) {
+    console.log("Database connection error, but server will continue running");
+  }
+})();
 
 // Middleware
 app.use(express.json());

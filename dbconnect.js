@@ -1,3 +1,4 @@
+
 import mongoose from 'mongoose';
 
 const dbConnect = async () => {
@@ -16,10 +17,9 @@ const dbConnect = async () => {
     console.log("✅ MongoDB Connected Successfully");
   } catch (err) {
     console.error("❌ MongoDB Connection Error:", err.message);
-    process.exit(1);
+    // Don't exit the process, let the app continue running without DB
+    console.log("⚠️ Application running without database connection");
   }
 };
 
 export default dbConnect;
-
-
