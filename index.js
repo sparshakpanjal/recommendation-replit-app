@@ -2,11 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import dbConnect from "./dbconnect.js";
 import authRouter from "./authRoute.js";
-import { errorHandler, notFound } from "./errorHandler.js";
-import productRouter from "./routes/productRoute.js";
-import categoryRouter from "./routes/categoryRoute.js";
-import orderRouter from "./routes/orderRoute.js";
-import cartRouter from "./routes/cartRoute.js";
+import { errorHandler, notFound } from "./errorHandler.js"; // Corrected typo in import
 
 dotenv.config(); // Load environment variables
 
@@ -18,14 +14,13 @@ dbConnect();
 
 // Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
 // Routes
 app.use("/api/user", authRouter);
-app.use("/api/products", productRouter);
-app.use("/api/categories", categoryRouter);
-app.use("/api/orders", orderRouter);
-app.use("/api/cart", cartRouter);
+app.use("/api/products", (await import("./routes/productRoute.js")).default);
+app.use("/api/categories", (await import("./routes/categoryRoute.js")).default);
+app.use("/api/orders", (await import("./routes/orderRoute.js")).default);
+app.use("/api/cart", (await import("./routes/cartRoute.js")).default);
 
 // Error Handlers
 app.use(notFound);

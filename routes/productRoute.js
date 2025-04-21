@@ -5,10 +5,14 @@ import { authMiddleware, isAdmin } from "../authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", authMiddleware, isAdmin, productCtrl.createProduct);
+// Public routes
+router.get("/", productCtrl.getAllProducts);
 router.get("/:id", productCtrl.getProduct);
+
+// Protected routes
+router.post("/", authMiddleware, isAdmin, productCtrl.createProduct);
 router.put("/:id", authMiddleware, isAdmin, productCtrl.updateProduct);
 router.delete("/:id", authMiddleware, isAdmin, productCtrl.deleteProduct);
-router.get("/", productCtrl.getAllProducts);
+router.post("/:id/reviews", authMiddleware, productCtrl.createProductReview);
 
 export default router;

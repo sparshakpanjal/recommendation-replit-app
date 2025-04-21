@@ -2,18 +2,18 @@ import mongoose from 'mongoose';
 
 const dbConnect = async () => {
   try {
-    // Use MongoDB Atlas or local MongoDB
-    const mongoUrl = process.env.MONGODB_URL || "mongodb://localhost:27017/ecommerce";
+    if (!process.env.MONGODB_URL) {
+      throw new Error("MONGODB_URL environment variable is not defined");
+    }
 
     if (mongoose.connection.readyState >= 1) {
       console.log("🔁 Reusing existing MongoDB connection");
       return;
     }
 
-    await mongoose.connect(mongoUrl);
+    await mongoose.connect(process.env.MONGODB_URL);
 
     console.log("✅ MongoDB Connected Successfully");
-    return mongoose.connection;
   } catch (err) {
     console.error("❌ MongoDB Connection Error:", err.message);
     process.exit(1);
