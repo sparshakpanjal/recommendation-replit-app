@@ -20,6 +20,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
+app.use(express.static('public'));
 
 // Routes
 app.use("/api/user", authRouter);
@@ -35,7 +36,7 @@ app.use(errorHandler);
 
 // Root Route
 app.get("/", (req, res) => {
-    res.send("Hello from server side");
+    res.sendFile('public/index.html', { root: '.' });
 });
 
 // Start server

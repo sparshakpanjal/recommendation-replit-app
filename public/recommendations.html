@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recommendations - E-commerce App</title>
+  <link rel="stylesheet" href="/css/recommendations.css">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header>
+    <nav>
+      <div class="logo">E-Commerce</div>
+      <ul>
+        <li><a href="/index.html">Home</a></li>
+        <li><a href="/products.html">Products</a></li>
+        <li><a href="/cart.html">Cart</a></li>
+        <li><a href="/recommendations.html" class="active">Recommendations</a></li>
+        <li><a href="/profile.html">Profile</a></li>
+        <li><a href="#" id="logout-btn">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="recommendations-section">
+      <h1>Your Personalized Recommendations</h1>
+      <p>Based on your shopping cart and browsing history</p>
+      
+      <div id="recommendations-container">
+        <!-- Recommendations will be loaded here -->
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2023 E-commerce App. All rights reserved.</p>
+  </footer>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/recommendations.js"></script>
+</body>
+</html>

@@ -32,14 +32,58 @@ const getRecommendations = asyncHandler(async (req, res) => {
       
       if (!product) return [];
       
-      // Find similar products based on category and brand
+      // Find similar products based on category, brand, and price range
+      const priceRange = {
+        min: product.price * 0.7, // 30% lower than product price
+        max: product.price * 1.3  // 30% higher than product price
+      };
+
+      // Find similar products with weighted scoring
       const similarProducts = await Product.find({
         _id: { $nin: [...cartProductIds, productId] }, // Exclude items already in cart
         $or: [
           { category: product.category },
-          { brand: product.brand }
+          { brand: product.brand },
+          { 
+            price: { 
+              $gte: priceRange.min, 
+              $lte: priceRange.max 
+            } 
+          }
         ]
-      }).limit(5);
+      }).limit(10);
+      
+      // Apply weighted scoring to rank similar products
+      const scoredProducts = similarProducts.map(p => {
+        let score = 0;
+        
+        // Category match: highest weight
+        if (p.category.toString() === product.category.toString()) {
+          score += 10;
+        }
+        
+        // Brand match: high weight
+        if (p.brand === product.brand) {
+          score += 7;
+        }
+        
+        // Price similarity: medium weight
+        const priceDifference = Math.abs(p.price - product.price) / product.price;
+        if (priceDifference < 0.1) { // Within 10%
+          score += 5;
+        } else if (priceDifference < 0.2) { // Within 20%
+          score += 3;
+        }
+        
+        // Rating boost: small weight
+        if (p.ratings > 4) {
+          score += 2;
+        }
+        
+        return { ...p._doc, score };
+      })
+      .sort((a, b) => b.score - a.score) // Sort by score descending
+      .slice(0, 5); // Get top 5 products
       
       return {
         recommendationId,
