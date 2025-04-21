@@ -17,6 +17,10 @@ app.use(express.json());
 
 // Routes
 app.use("/api/user", authRouter);
+app.use("/api/products", (await import("./routes/productRoute.js")).default);
+app.use("/api/categories", (await import("./routes/categoryRoute.js")).default);
+app.use("/api/orders", (await import("./routes/orderRoute.js")).default);
+app.use("/api/cart", (await import("./routes/cartRoute.js")).default);
 
 // Error Handlers
 app.use(notFound);
