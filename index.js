@@ -27,6 +27,7 @@ app.use("/api/products", (await import("./routes/productRoute.js")).default);
 app.use("/api/categories", (await import("./routes/categoryRoute.js")).default);
 app.use("/api/orders", (await import("./routes/orderRoute.js")).default);
 app.use("/api/cart", (await import("./routes/cartRoute.js")).default);
+app.use("/api/recommendations", (await import("./routes/recommendationRoute.js")).default);
 
 // Error Handlers
 app.use(notFound);
