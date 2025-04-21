@@ -1,7 +1,27 @@
+
 import mongoose from "mongoose";
 
-// Declare the Schema of the Mongo model
-var productSchema = new mongoose.Schema({
+const reviewSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    rating: {
+        type: Number,
+        required: true,
+        min: 1,
+        max: 5
+    },
+    comment: {
+        type: String,
+        required: true
+    }
+}, {
+    timestamps: true
+});
+
+const productSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true,
@@ -23,7 +43,8 @@ var productSchema = new mongoose.Schema({
         required: true,
     },
     category: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
         required: true,
     },
     brand: {
@@ -33,12 +54,10 @@ var productSchema = new mongoose.Schema({
     quantity: {
         type: Number,
         required: true,
-        select: false,
     },
     sold: {
         type: Number,
         default: 0,
-        select: false,
     },
     images: {
         type: Array,
@@ -47,13 +66,17 @@ var productSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    ratings: [
-        {
-            star: Number,
-            postedby: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        },
-    ],
-}, { timestamps: true });
+    reviews: [reviewSchema],
+    ratings: {
+        type: Number,
+        default: 0,
+    },
+    numReviews: {
+        type: Number,
+        default: 0,
+    }
+}, {
+    timestamps: true
+});
 
-// Export the model
 export default mongoose.model("Product", productSchema);
