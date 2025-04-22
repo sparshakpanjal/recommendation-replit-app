@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import dbConnect from "./dbconnect.js";
+import { dbConnect } from "./dbconnect.js";
 import authRouter from "./authRoute.js";
 import { errorHandler, notFound } from "./errorHandler.js"; // Corrected typo in import
 
@@ -10,7 +10,6 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to PostgreSQL
-import { dbConnect } from "./dbconnect.js";
 
 (async () => {
   try {
