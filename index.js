@@ -9,10 +9,13 @@ dotenv.config(); // Load environment variables
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
+// Connect to PostgreSQL
+import { dbConnect } from "./dbconnect.js";
+
 (async () => {
   try {
     await dbConnect();
+    console.log("Database connection established");
   } catch (error) {
     console.log("Database connection error, but server will continue running");
   }
