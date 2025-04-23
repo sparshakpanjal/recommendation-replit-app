@@ -15,7 +15,7 @@ ignorePorts = false
 
 [[ports]]
 localPort = 5000
-externalPort = 80
+externalPort = 8000
 
 [workflows]
 runButton = "Run"

@@ -129,6 +129,7 @@ async function createTables() {
     console.log('✅ All tables created successfully');
   } catch (error) {
     console.error('❌ Error creating tables:', error);
+
   } finally {
     // End the connection pool
     await sql.end();
@@ -136,4 +137,4 @@ async function createTables() {
   }
 }
 
-createTables();
+createTables ()
