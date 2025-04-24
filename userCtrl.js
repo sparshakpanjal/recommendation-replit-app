@@ -1,290 +1,173 @@
-import User from "./userModel.js"; // Corrected import
-import jwtTokens from "./jwtTokens.js"; // Corrected import
-import expressAsyncHandler from "express-async-handler";
+import fs from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import asyncHandler from 'express-async-handler';
+import jwtTokens from './jwtTokens.js';
+
+const USERS_FILE = path.join('data', 'users.csv');
+const HEADERS = ['id', 'email', 'password', 'firstname', 'lastname', 'mobile', 'isBlocked'];
+
+if (!fs.existsSync(USERS_FILE)) {
+  fs.writeFileSync(USERS_FILE, `${HEADERS.join(',')}\n`);
+}
+
 const { generateToken } = jwtTokens;
 
-// Simple MongoDB ID validation function
-const validateMongoDbId = (id) => {
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-        throw new Error("Invalid MongoDB ID");
+// CSV Helpers
+const readCSV = (file) => {
+  const lines = fs.readFileSync(file, 'utf-8').trim().split('\n');
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const values = line.split(',');
+    return headers.reduce((obj, h, i) => {
+      obj[h] = values[i];
+      return obj;
+    }, {});
+  });
+};
+
+const writeCSV = (file, data, headers) => {
+  const csv = [headers.join(','), ...data.map(row => headers.map(h => row[h] ?? '').join(','))].join('\n');
+  fs.writeFileSync(file, csv);
+};
+
+// Controller Functions
+const createUser = asyncHandler(async (req, res) => {
+  const { email, password, firstname, lastname, mobile } = req.body;
+  if (!email || !password || !firstname || !lastname || !mobile) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  const users = readCSV(USERS_FILE);
+  if (users.find(u => u.email === email)) {
+    return res.status(400).json({ error: 'User already exists' });
+  }
+
+  const newUser = {
+    id: uuidv4(),
+    email,
+    password, // Reminder: hash this in real apps
+    firstname,
+    lastname,
+    mobile,
+    isBlocked: 'false'
+  };
+
+  users.push(newUser);
+  writeCSV(USERS_FILE, users, HEADERS);
+
+  res.status(201).json({
+    status: 'success',
+    token: generateToken(newUser.id),
+    user: {
+      _id: newUser.id,
+      firstname,
+      lastname,
+      email,
+      mobile
     }
-    return true;
-};
-import jwt from "jsonwebtoken";
-import asyncHandler from "express-async-handler";
-
-
-const createUser = async (req, res, next) => {
-    try {
-        const { email, password, firstname, lastname, mobile } = req.body;
-
-        if (!email || !password || !firstname || !lastname || !mobile) {
-            throw new Error("All fields are required");
-        }
-
-        const findUser = await User.findOne({ email }); // Corrected to use User model
-        if (findUser) {
-            throw new Error("User Already Exists");
-        }
-
-        const newUser = await User.create({ // Corrected to use User model
-            email,
-            password,
-            firstname,
-            lastname,
-            mobile
-        });
-
-        res.status(201).json({
-            status: "success",
-            token: generateToken(newUser._id),
-            user: {
-                _id: newUser._id,
-                firstname: newUser.firstname,
-                lastname: newUser.lastname,
-                email: newUser.email,
-                mobile: newUser.mobile
-            }
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-const loginUser = async (req, res, next) => {
-    try {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            throw new Error("Email and password are required");
-        }
-
-        const findUser = await User.findOne({ email }); // Corrected to use User model
-        if (!findUser) {
-            throw new Error("User not found");
-        }
-
-        const isPasswordValid = await findUser.isPasswordMatched(password);
-        if (!isPasswordValid) {
-            throw new Error("Invalid password");
-        }
-        
-        const refreshToken = generateRefreshToken(findUser?._id);
-        const updateuser = await
-            User.findByIdAndUpdate(
-                findUser.id,
-                {
-                    refreshToken: refreshToken,
-                },
-                { new: true}
-            );
-            
-        // Set cookie manually without cookie-parser
-        const maxAge = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
-        const expires = new Date(Date.now() + maxAge);
-        res.setHeader('Set-Cookie', `refreshToken=${refreshToken}; HttpOnly; Path=/; Expires=${expires.toUTCString()}; Secure`);
-
-        res.json({
-            status: "success",
-            token: generateToken(findUser._id),
-            user: {
-                _id: findUser._id,
-                firstname: findUser.firstname,
-                lastname: findUser.lastname,
-                email: findUser.email,
-                mobile: findUser.mobile
-            }
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-// Get all users
-const getAllUsers = async (req, res, next) => {
-    try {
-        const users = await User.find();
-        res.json(users);
-    } catch (error) {
-        next(error);
-    }
-};
-
-// Get a single user
-const getUser = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        validateMongoDbId(id);
-        const user = await User.findById(id);
-        if (!user) {
-            throw new Error("User not found");
-        }
-        res.json(user);
-    } catch (error) {
-        next(error);
-    }
-};
-
-// Helper function to parse cookies without cookie-parser
-const parseCookies = (req) => {
-    const cookieHeader = req.headers.cookie;
-    if (!cookieHeader) return {};
-    
-    const cookieObj = {};
-    const cookies = cookieHeader.split(';');
-    
-    cookies.forEach(cookie => {
-        const parts = cookie.split('=');
-        const key = parts[0].trim();
-        const value = parts.slice(1).join('=').trim();
-        cookieObj[key] = decodeURIComponent(value);
-    });
-    
-    return cookieObj;
-};
-
-// Function to generate refresh token
-const generateRefreshToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "3d" });
-};
-
-// Handle refresh token
-const handleRefreshToken = asyncHandler(async (req, res) => {
-    const cookies = parseCookies(req);
-    console.log(cookies);
-    if (!cookies?.refreshToken) throw new Error("No Refresh Token in Cookies");
-    const refreshToken = cookies.refreshToken;
-    console.log(refreshToken);
-    const user = await User.findOne({ refreshToken });
-    if (!user) throw new Error("No Refresh token present in db or not matched");
-    jwt.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
-        if (err || user.id !== decoded.id) {
-            throw new Error("There is something wrong with refresh token");
-        }
-        const accessToken = generateToken(user._id);
-        res.json({ accessToken });
-    });
+  });
 });
 
-// logout functionality
-const logout = asyncHandler(async (req, res) => {
-    const cookies = parseCookies(req);
-    if (!cookies?.refreshToken) throw new Error("No Refresh Token in Cookies");
-    const refreshToken = cookies.refreshToken;
-    const user = await User.findOne({ refreshToken });
-    if (!user) {
-        // Set cookie with past expiry to delete it
-        res.setHeader('Set-Cookie', 'refreshToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure');
-        return res.sendStatus(204); // forbidden
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  const users = readCSV(USERS_FILE);
+  const user = users.find(u => u.email === email);
+
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.password !== password) return res.status(400).json({ error: 'Invalid password' });
+  if (user.isBlocked === 'true') return res.status(403).json({ error: 'User is blocked' });
+
+  const token = generateToken(user.id);
+  const refreshToken = generateToken(user.id); // Replace with a different refreshToken if needed
+
+  res.setHeader('Set-Cookie', `refreshToken=${refreshToken}; HttpOnly; Path=/; Max-Age=${3 * 24 * 60 * 60}; Secure`);
+
+  res.json({
+    status: 'success',
+    token,
+    user: {
+      _id: user.id,
+      firstname: user.firstname,
+      lastname: user.lastname,
+      email: user.email,
+      mobile: user.mobile
     }
-    await User.findOneAndUpdate({ refreshToken }, {
-        refreshToken: "",
-    });
-    // Set cookie with past expiry to delete it
-    res.setHeader('Set-Cookie', 'refreshToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure');
-    return res.sendStatus(204); // forbidden
+  });
 });
-     
 
-// Update user
-const updateUser = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const { firstname, lastname, email, mobile } = req.body;
-        
-        // Don't allow password updates through this endpoint for security
-        const updatedUser = await User.findByIdAndUpdate(
-            id,
-            {
-                firstname,
-                lastname,
-                email,
-                mobile
-            },
-            { new: true }
-        );
-        
-        if (!updatedUser) {
-            throw new Error("User not found");
-        }
-        
-        res.json({
-            status: "success",
-            user: updatedUser
-        });
-    } catch (error) {
-        next(error);
-    }
-};
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = readCSV(USERS_FILE);
+  res.json(users);
+});
 
-// Delete user
-const deleteUser = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const deletedUser = await User.findByIdAndDelete(id);
-        
-        if (!deletedUser) {
-            throw new Error("User not found");
-        }
-        
-        res.json({
-            status: "success",
-            message: "User deleted successfully"
-        });
-    } catch (error) {
-        next(error);
-    }
-};
+const getUser = asyncHandler(async (req, res) => {
+  const user = readCSV(USERS_FILE).find(u => u.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json(user);
+});
+
+const updateUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { firstname, lastname, email, mobile } = req.body;
+
+  const users = readCSV(USERS_FILE);
+  const index = users.findIndex(u => u.id === id);
+  if (index === -1) return res.status(404).json({ error: 'User not found' });
+
+  users[index] = {
+    ...users[index],
+    firstname: firstname ?? users[index].firstname,
+    lastname: lastname ?? users[index].lastname,
+    email: email ?? users[index].email,
+    mobile: mobile ?? users[index].mobile
+  };
+
+  writeCSV(USERS_FILE, users, HEADERS);
+  res.json({ status: 'success', user: users[index] });
+});
+
+const deleteUser = asyncHandler(async (req, res) => {
+  const users = readCSV(USERS_FILE);
+  const index = users.findIndex(u => u.id === req.params.id);
+  if (index === -1) return res.status(404).json({ error: 'User not found' });
+
+  const [deletedUser] = users.splice(index, 1);
+  writeCSV(USERS_FILE, users, HEADERS);
+  res.json({ status: 'success', message: 'User deleted', deletedUser });
+});
 
 const blockUser = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    try {
-        const blockuser = await User.findByIdAndUpdate(
-            id,
-            {
-                isBlocked: true,
-            },
-            {
-                new: true,
-            }
-        );
-        res.json({
-            message: "User Blocked",
-        });
-    } catch (error) {
-        throw new Error(error);  
-    }
+  const users = readCSV(USERS_FILE);
+  const index = users.findIndex(u => u.id === req.params.id);
+  if (index === -1) return res.status(404).json({ error: 'User not found' });
+
+  users[index].isBlocked = 'true';
+  writeCSV(USERS_FILE, users, HEADERS);
+  res.json({ status: 'success', message: 'User blocked' });
 });
 
 const unblockUser = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    try {
-        const unblockuser = await User.findByIdAndUpdate(
-            id,
-            {
-                isBlocked: false,
-            },
-            {
-                new: true,
-            }
-        );
-        res.json({
-            message: "User UnBlocked",
-        });     
-    } catch (error) {
-        throw new Error(error);  
-    }
-});    
-     
-export default { 
-    createUser, 
-    loginUser, 
-    getAllUsers, 
-    getUser, 
-    updateUser, 
-    deleteUser,
-    blockUser,
-    unblockUser,
-    handleRefreshToken,
-    logout
+  const users = readCSV(USERS_FILE);
+  const index = users.findIndex(u => u.id === req.params.id);
+  if (index === -1) return res.status(404).json({ error: 'User not found' });
+
+  users[index].isBlocked = 'false';
+  writeCSV(USERS_FILE, users, HEADERS);
+  res.json({ status: 'success', message: 'User unblocked' });
+});
+
+export default {
+  createUser,
+  loginUser,
+  getAllUsers,
+  getUser,
+  updateUser,
+  deleteUser,
+  blockUser,
+  unblockUser
 };

@@ -1,18 +1,31 @@
-const express = require("express");
-const { createProduct, 
-       getaProduct,
-       gatAllProduct,
-       filterProduct,
-      } = require("../controller/productCtrl");
-const { isAdmin } = require("../middlewares/authMiddleware");
+import express from "express";
+import {
+  createProduct,
+  getAProduct,
+  getAllProduct,
+  updateProduct,
+  deleteProduct,
+  filterProduct, // assumed to be implemented
+} from "../controllers/productCtrl.js";
+import { authMiddleware, isAdmin } from "../middlewares/authMiddleware.js";
+
 const router = express.Router();
 
-router.post("/", authMiddleware, isAdmin,  createProduct);
-router.get("/:id",  getaProduct);
-router.put("/:id", authMiddleware, isAdmin,  updateProduct);
-router.delete("/:id", authMiddleware, isAdmin, deleteProduct);
+// CREATE
+router.post("/", authMiddleware, isAdmin, createProduct);
+
+// READ
+router.get("/:id", getAProduct);
 router.get("/", getAllProduct);
 
+// UPDATE
+router.put("/:id", authMiddleware, isAdmin, updateProduct);
 
-module.exports = router;
+// DELETE
+router.delete("/:id", authMiddleware, isAdmin, deleteProduct);
+
+// OPTIONAL: Filtering (e.g., /api/products/filter?category=shoes)
+router.get("/filter/query", filterProduct); // Ensure you implement this in your controller
+
+export default router;
 

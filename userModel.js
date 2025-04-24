@@ -1,87 +1,86 @@
+import bcrypt from 'bcrypt';
+import { readCSV, writeCSV, appendCSV } from '../utils/dbconnect.js';
+import { v4 as uuidv4 } from 'uuid';
 
-import bcrypt from "bcrypt";
-import { sql } from './dbconnect.js';
+const FILENAME = 'data/sampled_users.csv';
 
-// User model functions for PostgreSQL
 const User = {
   // Create a new user
   async create(userData) {
+    const users = await readCSV(FILENAME);
+
+    const existing = users.find(u => u.Email === userData.email);
+    if (existing) throw new Error('User already exists');
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(userData.password, salt);
-    
-    const result = await sql`
-      INSERT INTO users (
-        firstname, lastname, email, mobile, password, role, is_admin
-      ) VALUES (
-        ${userData.firstname}, 
-        ${userData.lastname}, 
-        ${userData.email}, 
-        ${userData.mobile}, 
-        ${hashedPassword}, 
-        ${userData.role || 'user'}, 
-        ${userData.isAdmin || 'user'}
-      ) 
-      RETURNING *
-    `;
-    
-    return result[0];
+
+    const newUser = {
+      UserID: uuidv4(),
+      UserName: `${userData.firstname} ${userData.lastname}`,
+      Email: userData.email,
+      Address: userData.address || 'N/A',
+      Phone: userData.mobile,
+      Password: hashedPassword,
+      Role: userData.role || 'user',
+      CreatedAt: new Date().toISOString(),
+      UpdatedAt: new Date().toISOString()
+    };
+
+    await appendCSV(FILENAME, newUser);
+    return newUser;
   },
-  
+
   // Find a user by ID
   async findById(id) {
-    const user = await sql`SELECT * FROM users WHERE id = ${id}`;
-    return user[0] || null;
+    const users = await readCSV(FILENAME);
+    return users.find(u => u.UserID === id) || null;
   },
-  
-  // Find a user by email
+
+  // Find one user by key
   async findOne(query) {
-    const user = await sql`
-      SELECT * FROM users 
-      WHERE ${sql(query)}
-      LIMIT 1
-    `;
-    return user[0] || null;
+    const users = await readCSV(FILENAME);
+    const [key, value] = Object.entries(query)[0];
+    return users.find(u => u[key] === value) || null;
   },
-  
-  // Find all users
+
+  // Get all users, with optional filtering and pagination
   async find(query = {}, options = {}) {
+    const users = await readCSV(FILENAME);
+    let filtered = users;
+
+    for (const [key, val] of Object.entries(query)) {
+      filtered = filtered.filter(u => u[key] === val);
+    }
+
     const { limit, skip } = options;
-    const users = await sql`
-      SELECT * FROM users 
-      WHERE ${sql(query)}
-      LIMIT ${limit || null}
-      OFFSET ${skip || 0}
-    `;
-    return users;
+    return filtered.slice(skip || 0, limit ? (skip || 0) + limit : undefined);
   },
-  
+
   // Update a user
   async findByIdAndUpdate(id, update) {
-    // If password is being updated, hash it
+    const users = await readCSV(FILENAME);
+    const index = users.findIndex(u => u.UserID === id);
+    if (index === -1) return null;
+
     if (update.password) {
       const salt = await bcrypt.genSalt(10);
-      update.password = await bcrypt.hash(update.password, salt);
+      update.Password = await bcrypt.hash(update.password, salt);
+      delete update.password;
     }
-    
-    const columns = Object.keys(update);
-    const values = Object.values(update);
-    
-    if (columns.length === 0) return null;
-    
-    // Dynamically build the SET part of the query
-    let setClause = columns.map((col, i) => `${col} = ${values[i]}`).join(', ');
-    
-    const updatedUser = await sql`
-      UPDATE users 
-      SET ${sql(setClause)}, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id}
-      RETURNING *
-    `;
-    
-    return updatedUser[0] || null;
+
+    const updatedUser = {
+      ...users[index],
+      ...update,
+      UpdatedAt: new Date().toISOString()
+    };
+
+    users[index] = updatedUser;
+    await writeCSV(FILENAME, users);
+    return updatedUser;
   },
-  
-  // Compare password
+
+  // Password matcher
   async isPasswordMatched(enteredPassword, storedPassword) {
     return await bcrypt.compare(enteredPassword, storedPassword);
   }

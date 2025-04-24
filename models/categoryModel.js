@@ -1,86 +1,119 @@
-import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
-// 🔐 Initialize Supabase client
-const supabaseUrl = process.env.SUPABASE_URL?.trim();
-const supabaseKey = process.env.SUPABASE_ANON_KEY?.trim();
+const CATEGORIES_FILE = path.join('data', 'categories.csv');
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error("❌ Supabase credentials missing from environment variables.");
-  throw new Error("Supabase URL or ANON KEY is missing.");
+// Ensure the CSV file exists with headers
+if (!fs.existsSync(CATEGORIES_FILE)) {
+  fs.writeFileSync(CATEGORIES_FILE, 'id,title,slug\n');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Helper: Read CSV and parse to objects
+function readCSV(file) {
+  const lines = fs.readFileSync(file, 'utf-8').trim().split('\n');
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    const values = line.split(',');
+    return headers.reduce((obj, h, i) => {
+      obj[h] = values[i];
+      return obj;
+    }, {});
+  });
+}
 
-// 🛠️ Centralized error handler
-const handleError = (action, error) => {
-  console.error(`❌ ${action} | Supabase Error:`, error.message);
-  throw new Error(`${action} failed: ${error.message}`);
-};
+// Helper: Convert object array to CSV and save
+function writeCSV(file, data, headers) {
+  const csv = [
+    headers.join(','),
+    ...data.map(row => headers.map(h => row[h] ?? '').join(','))
+  ].join('\n');
+  fs.writeFileSync(file, csv);
+}
 
-// ➕ Create category
+// 🔧 Create a new category
 export const createCategory = async (title, slug) => {
   try {
-    const { data, error } = await supabase
-      .from('categories')
-      .insert([{ title, slug }])
-      .select()
-      .single();
+    const categories = readCSV(CATEGORIES_FILE);
 
-    if (error) handleError("Create Category", error);
-    return data;
+    // Prevent duplicate slugs
+    if (categories.some(c => c.slug === slug)) {
+      throw new Error('Category slug must be unique.');
+    }
+
+    const newCategory = {
+      id: uuidv4(),
+      title,
+      slug
+    };
+
+    categories.push(newCategory);
+    writeCSV(CATEGORIES_FILE, categories, ['id', 'title', 'slug']);
+    return newCategory;
   } catch (err) {
-    console.error("🔥 Unexpected error in createCategory:", err.message);
+    console.error('🔥 Error in createCategory:', err.message);
     throw err;
   }
 };
 
-// 📥 Get all categories
+// 🔎 Get all categories
 export const getCategories = async () => {
   try {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*');
-
-    if (error) handleError("Fetch Categories", error);
-    return data;
+    return readCSV(CATEGORIES_FILE);
   } catch (err) {
-    console.error("🔥 Unexpected error in getCategories:", err.message);
+    console.error('🔥 Error in getCategories:', err.message);
     throw err;
   }
 };
 
-// 🔁 Update category
+// ✏️ Update a category by ID
 export const updateCategory = async (id, updates) => {
   try {
-    const { data, error } = await supabase
-      .from('categories')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+    const categories = readCSV(CATEGORIES_FILE);
+    const index = categories.findIndex(c => c.id === id);
+    if (index === -1) throw new Error('Category not found.');
 
-    if (error) handleError("Update Category", error);
-    return data;
+    // Check for slug uniqueness if updating slug
+    if (updates.slug && categories.some(c => c.slug === updates.slug && c.id !== id)) {
+      throw new Error('Slug must be unique.');
+    }
+
+    categories[index] = {
+      ...categories[index],
+      ...updates
+    };
+
+    writeCSV(CATEGORIES_FILE, categories, ['id', 'title', 'slug']);
+    return categories[index];
   } catch (err) {
-    console.error("🔥 Unexpected error in updateCategory:", err.message);
+    console.error('🔥 Error in updateCategory:', err.message);
     throw err;
   }
 };
 
-// 🗑️ Delete category
+// 🗑️ Delete a category by ID
 export const deleteCategory = async (id) => {
   try {
-    const { data, error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('id', id)
-      .select()
-      .single();
+    let categories = readCSV(CATEGORIES_FILE);
+    const index = categories.findIndex(c => c.id === id);
+    if (index === -1) throw new Error('Category not found.');
 
-    if (error) handleError("Delete Category", error);
-    return data;
+    const [deleted] = categories.splice(index, 1);
+    writeCSV(CATEGORIES_FILE, categories, ['id', 'title', 'slug']);
+    return deleted;
   } catch (err) {
-    console.error("🔥 Unexpected error in deleteCategory:", err.message);
+    console.error('🔥 Error in deleteCategory:', err.message);
+    throw err;
+  }
+};
+
+// 🔍 Get category by slug (optional helper)
+export const getCategoryBySlug = async (slug) => {
+  try {
+    const categories = readCSV(CATEGORIES_FILE);
+    return categories.find(c => c.slug === slug) || null;
+  } catch (err) {
+    console.error('🔥 Error in getCategoryBySlug:', err.message);
     throw err;
   }
 };

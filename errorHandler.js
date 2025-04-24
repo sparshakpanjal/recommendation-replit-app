@@ -1,7 +1,7 @@
-// not Found
+// Not Found
 const notFound = (req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
-  res.status(404);
+  res.status(404); // Ensure status is set before passing the error
   next(error);
 };
 
@@ -16,6 +16,10 @@ const errorHandler = (err, req, res, next) => {
         ? "No stack trace available"
         : err.stack,
   });
+
+  // Log the error (you could add more sophisticated logging here)
+  console.error(`[ERROR] ${err.message}\nStack: ${err.stack}`);
 };
 
-export { errorHandler, notFound }; // Corrected export
+export { errorHandler, notFound };
+
